@@ -120,8 +120,10 @@ if not uploaded:
 
 # ── Leitura ───────────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Lendo arquivo…")
-def load_data(file_bytes, sheet_name):
-    df = pd.read_excel(BytesIO(file_bytes), sheet_name=sheet_name)
+def load_data(file_bytes, sheet_name, header_row=0):
+    df = pd.read_excel(BytesIO(file_bytes), sheet_name=sheet_name, header=header_row)
+    df = df.dropna(how="all", axis=1).dropna(how="all", axis=0).reset_index(drop=True)
+    df.columns = [str(c).strip() for c in df.columns]
     df = try_parse_dates(df)
     return df
 
@@ -132,8 +134,19 @@ sheet_names = xls.sheet_names
 with st.sidebar:
     st.markdown("### ⚙️ Configurações")
     sheet = st.selectbox("Planilha", sheet_names)
+    header_row = st.number_input(
+        "Linha do cabeçalho",
+        min_value=1, max_value=20, value=6, step=1,
+        help="Qual linha do Excel contém os nomes das colunas? (padrão: 6)"
+    ) - 1  # converte para índice 0-based
 
-df_raw = load_data(file_bytes, sheet)
+df_raw = load_data(file_bytes, sheet, header_row)
+
+# Mostra colunas detectadas para diagnóstico rápido
+with st.sidebar:
+    with st.expander("🔎 Colunas detectadas"):
+        st.write(list(df_raw.columns))
+
 numeric_cols, date_cols, cat_cols = detect_column_types(df_raw)
 
 # ── Sidebar – Filtros Gerais ──────────────────────────────────────────────────
