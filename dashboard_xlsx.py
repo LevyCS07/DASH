@@ -144,10 +144,14 @@ with st.sidebar:
     df_filtered = df_raw.copy()
 
     for col in cat_cols[:4]:
-        unique_vals = sorted(df_raw[col].dropna().unique().tolist())
+        unique_vals = df_raw[col].dropna().unique().tolist()
+        try:
+            unique_vals = sorted(unique_vals, key=lambda x: str(x))
+        except Exception:
+            unique_vals = [str(v) for v in unique_vals]
         if 1 < len(unique_vals) <= 60:
             sel = st.multiselect(col, unique_vals, default=unique_vals)
-            df_filtered = df_filtered[df_filtered[col].isin(sel)]
+            df_filtered = df_filtered[df_filtered[col].astype(str).isin([str(v) for v in sel])]
 
     for col in numeric_cols[:2]:
         col_min = float(df_raw[col].min())
@@ -206,7 +210,7 @@ with tab_entradas:
         st.stop()
 
     # ── Pesquisa de Rota ──────────────────────────────────────────────────────
-    rotas_disp = sorted(df_ida[col_rota].dropna().unique().tolist())
+    rotas_disp = sorted(df_ida[col_rota].dropna().unique().tolist(), key=lambda x: str(x))
 
     col_search, col_mode = st.columns([3, 1])
     with col_search:
